@@ -6,23 +6,38 @@ build-backend = "chimerax.bundle_builder.cx_pep517"
 name = "ChimeraX-MedicalImaging"
 license = { text = "Free for non-commercial use" }
 authors = [{ name = "UCSF RBVI", email = "chimerax@cgl.ucsf.edu" }]
-description = "Medical imaging support including DICOM format"
+description = "Medical imaging support for ChimeraX, including DICOM, NIfTI, and NRRD reading and writing"
 dependencies = [
   "ChimeraX-Core >1.12",
   "ChimeraX-DataFormats ~=1.0",
   "ChimeraX-Geometry ~= 1.0",
+  "ChimeraX-ImageFormats ~= 1.0",
   "ChimeraX-MapData ~= 2.0",
   "ChimeraX-OpenCommand ~= 1.0",
+  "ChimeraX-SaveCommand ~= 1.0",
   "ChimeraX-UI >= 1.33",
+  "nibabel==5.2.0",
+  "pydicom==2.4.4",
+  "pynrrd==1.0.0",
+  "tcia_utils==3.2.1",
+  "python-gdcm==3.0.24.1",
 ]
 dynamic = ["classifiers", "requires-python", "version"]
 
-[project.optional-dependencies]
-losslessjpeg = ["python-gdcm"]
 
 [project.readme]
 content-type = "text"
-text = "Medical imaging support for ChimeraX, including DICOM format reading/writing and medical image visualization tools."
+text = """
+Medical imaging support for ChimeraX, covering the DICOM, NIfTI, and NRRD formats.
+
+The bundle reads and writes DICOM data — both individual .dcm files and directories containing multi-series studies — and reads and writes NIfTI (.nii, .nii.gz) and NRRD (.nrrd) medical volumes. DICOM files using uncompressed, RLE, and baseline-JPEG transfer syntaxes are supported natively; to enable lossless JPEG, JPEG 2000, and other less common encodings, install the optional dependency python-gdcm (pip install python-gdcm).
+
+Two tools are included. The DICOM Browser shows patient, study, and series metadata for loaded DICOM data. Download DICOM lets you browse and fetch public datasets from The Cancer Imaging Archive (TCIA) directly within ChimeraX, either through the tool's interface or via the command line (e.g. open <SeriesInstanceUID> format dicom fromDatabase tcia).
+
+A Medical Image toolbar tab provides one-click access to the visualization styles most useful for volumetric medical data — single plane, slab, orthogonal planes, and full-volume rendering — along with preset color schemes for airways, chest, and brain CT, slice and raycasting render modes, and mouse modes for cropping, moving planes, tilting slabs, measuring distances, and adjusting window/level.
+
+This bundle supersedes ChimeraX-Dicom, ChimeraX-MedicalToolbar, ChimeraX-Nifti, and ChimeraX-NRRD.
+"""
 
 [project.urls]
 Home = "https://www.rbvi.ucsf.edu/chimerax/"
@@ -32,6 +47,7 @@ version = { attr = "src.__version__" }
 
 [tool.chimerax]
 custom-init = true
+module-name-override = "medical_imaging"
 min-session-version = 1
 max-session-version = 1
 categories = ["Medical Imaging"]
@@ -59,6 +75,36 @@ format-name = "dicom"
 is-default = false
 
 [[tool.chimerax.data-format."DICOM medical imaging".save]]
+compression-okay = false
+is-default = true
+
+[tool.chimerax.data-format."NIfTI Medical Imaging"]
+category = "Volume Data"
+nicknames = ["nifti"]
+suffixes = [".nii", ".nii.gz"]
+allow-directory = false
+synopsis = "NIfTI"
+reference-url = "https://nifti.nimh.nih.gov/"
+
+[[tool.chimerax.data-format."NIfTI Medical Imaging".open]]
+batch = false
+
+[[tool.chimerax.data-format."NIfTI Medical Imaging".save]]
+compression-okay = false
+is-default = true
+
+[tool.chimerax.data-format."NRRD Medical Imaging"]
+category = "Volume Data"
+nicknames = ["nrrd"]
+suffixes = [".nrrd"]
+allow-directory = false
+synopsis = "NRRD"
+reference-url = "https://teem.sourceforge.net/nrrd/format.html"
+
+[[tool.chimerax.data-format."NRRD Medical Imaging".open]]
+batch = false
+
+[[tool.chimerax.data-format."NRRD Medical Imaging".save]]
 compression-okay = false
 is-default = true
 
