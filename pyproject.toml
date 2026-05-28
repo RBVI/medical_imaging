@@ -36,7 +36,7 @@ min-session-version = 1
 max-session-version = 1
 categories = ["Medical Imaging"]
 classifiers = ["Development Status :: 2 - Pre-Alpha"]
-supersedes = ["ChimeraX-Dicom", "ChimeraX-MedicalToolbar"]
+supersedes = ["ChimeraX-Dicom", "ChimeraX-MedicalToolbar", "ChimeraX-Nifti", "ChimeraX-NRRD"]
 
 [tool.chimerax.package-data]
 "src/icons" = ["*.png"]
