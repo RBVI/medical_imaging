@@ -10,7 +10,7 @@
 # including partial copies, of the software or any revisions
 # or derivations thereof.
 # === UCSF ChimeraX Copyright ===
-__version__ = "1.0"
+__version__ = "1.1"
 from chimerax.core.toolshed import BundleAPI
 from chimerax.map import add_map_format
 from chimerax.core.tools import get_singleton
@@ -61,6 +61,7 @@ class _MedicalImagingBundle(BundleAPI):
         # Handle toolbar providers
         else:
             from chimerax.medical_imaging import toolbar_actions
+
             toolbar_actions.run_provider(session, name)
 
 
