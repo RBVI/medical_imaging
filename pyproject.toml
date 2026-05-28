@@ -8,7 +8,7 @@ license = { text = "Free for non-commercial use" }
 authors = [{ name = "UCSF RBVI", email = "chimerax@cgl.ucsf.edu" }]
 description = "Medical imaging support including DICOM format"
 dependencies = [
-  "ChimeraX-Core ~=1.0",
+  "ChimeraX-Core >1.12",
   "ChimeraX-DataFormats ~=1.0",
   "ChimeraX-Geometry ~= 1.0",
   "ChimeraX-MapData ~= 2.0",
