@@ -12,7 +12,6 @@
 #  === UCSF ChimeraX Copyright ===
 import math
 
-import nibabel
 import os
 import glob
 
@@ -23,6 +22,8 @@ from chimerax.medical_imaging.coordinates import get_coordinate_system
 
 class NifTI:
     def __init__(self, session, data):
+        import nibabel
+
         self.session = session
         files = []
         for path in data:
@@ -49,6 +50,8 @@ class NifTI:
 
 class NiftiData:
     def __init__(self, session, data):
+        import nibabel
+
         self.session = session
         self._raw_data = data
         self.data_size = data.shape

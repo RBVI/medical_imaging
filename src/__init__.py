@@ -10,21 +10,52 @@
 # including partial copies, of the software or any revisions
 # or derivations thereof.
 # === UCSF ChimeraX Copyright ===
-__version__ = "1.1"
+__version__ = "1.1.1"
 from chimerax.core.toolshed import BundleAPI
 from chimerax.map import add_map_format
 from chimerax.core.tools import get_singleton
 from chimerax.open_command import OpenerInfo
 from chimerax.save_command import SaverInfo
 from chimerax.medical_imaging.dicom import DICOMMapFormat
-from chimerax.medical_imaging.dicom_volumes import DICOMVolume
-from chimerax.medical_imaging.dicom_opener import DicomOpener
-from chimerax.medical_imaging.dicom_saver import DicomSaver
-from chimerax.medical_imaging.dicom_fetcher import fetchers
-from chimerax.medical_imaging.dicom_hierarchy import Patient, Study
-from chimerax.medical_imaging.dicom_models import DicomGrid
-from chimerax.medical_imaging.nifti import NifTI, NiftiGrid
-from chimerax.medical_imaging.nrrd import NRRD, NRRDGrid
+
+# The format descriptor is needed at startup; readers and savers are not.
+_lazy_exports = {
+    'DICOMVolume': ('dicom_volumes', 'DICOMVolume'),
+    'DicomOpener': ('dicom_opener', 'DicomOpener'),
+    'DicomSaver': ('dicom_saver', 'DicomSaver'),
+    'fetchers': ('dicom_fetcher', 'fetchers'),
+    'Patient': ('dicom_hierarchy', 'Patient'),
+    'Study': ('dicom_hierarchy', 'Study'),
+    'DicomGrid': ('dicom_models', 'DicomGrid'),
+    'NifTI': ('nifti', 'NifTI'),
+    'NiftiGrid': ('nifti', 'NiftiGrid'),
+    'NRRD': ('nrrd', 'NRRD'),
+    'NRRDGrid': ('nrrd', 'NRRDGrid'),
+}
+_lazy_modules = {module for module, _ in _lazy_exports.values()} | {
+    'coordinates', 'errors', 'modality', 'types',
+}
+# Reloading the package must not leave old class exports cached.
+for _name in _lazy_exports:
+    globals().pop(_name, None)
+
+
+def __getattr__(name):
+    from importlib import import_module
+    if name in _lazy_exports:
+        module_name, attribute = _lazy_exports[name]
+        value = getattr(import_module('.' + module_name, __name__), attribute)
+    elif name in _lazy_modules:
+        value = import_module('.' + name, __name__)
+    else:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    globals()[name] = value
+    return value
+
+
+def __dir__():
+    return sorted(set(globals()) | _lazy_exports.keys() | _lazy_modules)
+
 
 
 class _MedicalImagingBundle(BundleAPI):
@@ -37,8 +68,10 @@ class _MedicalImagingBundle(BundleAPI):
 
     @staticmethod
     def get_class(class_name):
-        class_names = {"Patient": Patient, "Study": Study, "DICOMVolume": DICOMVolume}
-        return class_names.get(class_name, None)
+        if class_name in ('Patient', 'Study', 'DICOMVolume'):
+            from importlib import import_module
+            return getattr(import_module(__name__), class_name)
+        return None
 
     @staticmethod
     def start_tool(session, _, ti):
@@ -56,15 +89,18 @@ class _MedicalImagingBundle(BundleAPI):
         # Handle open/save command providers
         if mgr == session.open_command:
             if name == "DICOM medical imaging":
+                from .dicom_opener import DicomOpener
                 return DicomOpener()
             elif name == "NIfTI Medical Imaging":
                 return _NiftiOpenerInfo()
             elif name == "NRRD Medical Imaging":
                 return _NRRDOpenerInfo()
             else:
+                from .dicom_fetcher import fetchers
                 return fetchers[name]()
         elif mgr == session.save_command:
             if name == "DICOM medical imaging":
+                from .dicom_saver import DicomSaver
                 return DicomSaver()
             elif name == "NIfTI Medical Imaging":
                 return _NiftiSaverInfo()
@@ -79,6 +115,7 @@ class _MedicalImagingBundle(BundleAPI):
 
 class _NiftiOpenerInfo(OpenerInfo):
     def open(self, session, data, *args, **kw):
+        from .nifti import NifTI
         nifti = NifTI.from_paths(session, data)
         return nifti.open()
 
@@ -91,6 +128,7 @@ class _NiftiSaverInfo(SaverInfo):
 
     def save(self, session, path, *, models=None):
         import nibabel
+        from .nifti import NiftiGrid
         reference_volume = models[0].reference_volume
         original_grid = reference_volume.data
         affine = None
@@ -106,6 +144,7 @@ class _NiftiSaverInfo(SaverInfo):
 
 class _NRRDOpenerInfo(OpenerInfo):
     def open(self, session, data, *args, **kw):
+        from .nrrd import NRRD
         nrrd_reader = NRRD.from_paths(session, data)
         return nrrd_reader.open()
 
@@ -118,6 +157,7 @@ class _NRRDSaverInfo(SaverInfo):
 
     def save(self, session, path, *, models=None):
         import nrrd
+        from .nrrd import NRRDGrid
         import numpy as np
         reference_volume = models[0].reference_volume
         original_grid = reference_volume.data
@@ -141,3 +181,7 @@ class _NRRDSaverInfo(SaverInfo):
 
 
 bundle_api = _MedicalImagingBundle()
+
+# Preserve wildcard exports without importing their implementations eagerly.
+__all__ = sorted({name for name in globals() if not name.startswith("_")}
+                 | _lazy_exports.keys() | _lazy_modules)

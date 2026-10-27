@@ -12,7 +12,6 @@ import chimerax.core.session
 #  or derivations thereof.
 #  === UCSF ChimeraX Copyright ===
 
-import nrrd
 import numpy as np
 import os
 from chimerax.core.session import Session
@@ -24,6 +23,9 @@ from chimerax.medical_imaging.coordinates import get_coordinate_system
 
 class NRRD:
     def __init__(self, session, data):
+        # Reading NRRD data is the first operation that needs pynrrd.
+        import nrrd
+
         self.session = session
         self.paths = data
         self.nrrds = []

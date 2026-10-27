@@ -20,7 +20,25 @@ from typing import Any, Dict, TypeVar, Union
 from chimerax.core.session import Session
 from chimerax.map_data import MapFileFormat
 
-from .dicom_hierarchy import Patient, SeriesFile
+import chimerax as _chimerax
+
+for _name in ("Patient", "SeriesFile"):
+    globals().pop(_name, None)
+
+
+def __getattr__(name):
+    # Retain historical imports from this module without loading the reader
+    # hierarchy while constructing DICOMMapFormat at application startup.
+    if name in ('Patient', 'SeriesFile'):
+        from . import dicom_hierarchy
+        value = getattr(dicom_hierarchy, name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(set(globals()) | {'Patient', 'SeriesFile'})
 
 Path = TypeVar("Path", os.PathLike, str, bytes, None)
 
@@ -82,6 +100,7 @@ class DICOM:
         are treated as two different series.
         """
         from pydicom import dcmread
+        from .dicom_hierarchy import SeriesFile
         dfiles = []
         for path in paths:
             if os.path.isfile(path):
@@ -123,6 +142,7 @@ class DICOM:
 
     def _find_dicom_files_in_directory_recursively(self, path):
         from pydicom import dcmread
+        from .dicom_hierarchy import SeriesFile
         from pydicom.errors import InvalidDicomError
         dfiles = []
         for root, dirs, files in os.walk(path):
@@ -142,8 +162,9 @@ class DICOM:
             dfiles.extend(self._find_dicom_files_in_directory_recursively(d))
         return dfiles
 
-    def dicom_patients(self, files) -> list["Patient"]:
+    def dicom_patients(self, files) -> list["_chimerax.medical_imaging.Patient"]:
         """Group DICOM files into series"""
+        from .dicom_hierarchy import Patient
         series = defaultdict(list)
         patients = []
         for f in files:
@@ -175,6 +196,7 @@ class DICOM:
             del patient_list
 
     def _find_existing_patient(self, patient):
+        from .dicom_hierarchy import Patient
         for model in self.session.models:
             if type(model) is Patient and model.pid == patient.pid:
                 return model
@@ -211,3 +233,5 @@ class DICOMMapFormat(MapFileFormat, DICOM):
             paths = [paths]
         grids = self.dicom_grids(paths, log)
         return grids
+
+__all__ = [name for name in globals() if not name.startswith("_")] + ["Patient", "SeriesFile"]
