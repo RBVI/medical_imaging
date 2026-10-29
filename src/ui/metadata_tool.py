@@ -201,7 +201,7 @@ class DICOMMetadata(ToolInstance):
         if not self.table:
             raise RuntimeError("Cannot set columns for non-existent metadata table.")
         self.table.add_column("Tag", lambda x: str(x.tag).upper())
-        self.table.add_column("Attribute", lambda x: x.description())
+        self.table.add_column("Attribute", lambda x: x.name)
         self.table.add_column("Value", lambda x: _format_multivalue(x))
         self.table.add_column("VR", lambda x: x.VR)
 
